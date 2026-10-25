@@ -16,6 +16,7 @@ import { getMiniPayProvider } from 'utils/minipay'
 import { miniPayConnector } from './minipayConnector'
 import { useNetwork } from 'hooks/useWeb3'
 import { WALLET_RECONNECT_FLAG_KEY } from 'constants/reown'
+import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
 
 const queryClient = new QueryClient()
 
@@ -31,34 +32,7 @@ const metadata = {
     icons: typeof window !== 'undefined' ? [`${window.location.origin}/favicon.ico`] : [],
 }
 
-const localFeatureConfig = {
-    networks: {
-        [SupportedChains.CELO]: { networkEnabled: true },
-        [SupportedChains.MAINNET]: { networkEnabled: true },
-        [SupportedChains.FUSE]: { networkEnabled: true },
-        [SupportedChains.XDC]: { networkEnabled: true },
-    },
-    globalDefaults: {
-        defaultEnabled: true,
-        defaultNetworkEnabled: true,
-    },
-}
-
-const getAllowedNetworks = (): SupportedChains[] => {
-    const isGlobalFeatureSystemDisabled = localFeatureConfig.globalDefaults.defaultEnabled === false
-    const globalFeatureDefault = localFeatureConfig.globalDefaults.defaultNetworkEnabled
-
-    // Disable globally if system or feature default is off
-    if (isGlobalFeatureSystemDisabled || globalFeatureDefault === false) {
-        return []
-    }
-
-    const productionNetworkIds = Object.values(SupportedChains).filter((id) => id) as SupportedChains[]
-    const prodNetworks = productionNetworkIds.filter((id) => {
-        const chainOverrides = localFeatureConfig.networks?.[id]
-        return chainOverrides?.networkEnabled === true
-    })
-
+const getAllowedNetworks = (prodNetworks: SupportedChains[] = []): SupportedChains[] => {
     const network = getEnv()
     switch (true) {
         case network === 'staging':
@@ -114,14 +88,6 @@ const mapSupportedChainToReownNetwork = (chain: SupportedChains): AppKitNetwork 
     }
 }
 
-const allowedChains = [SupportedChains.CELO, ...getAllowedNetworks().filter((chain) => chain !== SupportedChains.CELO)]
-
-if (allowedChains.length === 0) {
-    throw new Error('No networks enabled. At least one network must be enabled.')
-}
-
-const networks = allowedChains.map(mapSupportedChainToReownNetwork) as [AppKitNetwork, ...AppKitNetwork[]]
-
 const baseConnectors = [
     injected({
         target() {
@@ -164,10 +130,18 @@ let wagmiAdapter: WagmiAdapter = null as any
 export function AppKitProvider({ children }: { children: React.ReactNode }) {
     const [initialized, setInitialized] = React.useState(false)
     const canReconnect = canReconnectOnMount()
+    const { activeNetworksByFeature } = useGoodDappFeatures()
 
     const { testedRpcs } = useNetwork()
     useEffect(() => {
         if (testedRpcs === null) return
+        const prodNetworks = activeNetworksByFeature['networkEnabled'] ?? []
+        const allowedChains = [
+            SupportedChains.CELO,
+            ...getAllowedNetworks(prodNetworks).filter((chain) => chain !== SupportedChains.CELO),
+        ]
+        const networks = allowedChains.map(mapSupportedChainToReownNetwork) as [AppKitNetwork, ...AppKitNetwork[]]
+
         console.log("initializing Reown's AppKitProvider with tested RPCs:", testedRpcs)
         const transports = {}
         networks.map((network) => {

@@ -33,7 +33,7 @@ import useSendAnalyticsData from 'hooks/useSendAnalyticsData'
 import { useWindowSize } from 'hooks/useWindowSize'
 import styled from 'styled-components'
 import { SupportedChains } from '@gooddollar/web3sdk-v2'
-import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { isFeatureActive, useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
 
 const StakeTable = ({
     list,
@@ -443,9 +443,9 @@ export default function Stakes(): JSX.Element | null {
         return stakes
     }, [web3, mainnetWeb3])
 
-    const { isFeatureActive } = useGoodDappFeatures()
-    const mainnetStakesEnabled = isFeatureActive('stakingEnabled', SupportedChains.MAINNET)
-    const governanceStakesEnabled = isFeatureActive('governanceEnabled', SupportedChains.FUSE)
+    const { activeNetworksByFeature } = useGoodDappFeatures()
+    const mainnetStakesEnabled = isFeatureActive(activeNetworksByFeature, 'stakingEnabled', SupportedChains.MAINNET)
+    const governanceStakesEnabled = isFeatureActive(activeNetworksByFeature, 'governanceEnabled', SupportedChains.FUSE)
 
     const sorted = useSearchAndSort(
         stakes,

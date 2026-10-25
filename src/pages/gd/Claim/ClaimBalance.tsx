@@ -4,7 +4,7 @@ import { ArrowButton, BalanceGD } from '@gooddollar/good-design'
 import { SupportedChains, useHasClaimed, useSwitchNetwork } from '@gooddollar/web3sdk-v2'
 import { useG$Price } from '@gooddollar/web3sdk-v2'
 import { useClaiming } from 'hooks/useClaiming'
-import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { isFeatureActive, useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
 import { useNetworkModalToggle } from 'state/application/hooks'
 import { QueryParams } from '@usedapp/core'
 import { useIsSimpleApp } from 'state/simpleapp/simpleapp'
@@ -19,8 +19,8 @@ const NextClaim = ({ time }: { time: string }) => (
 
 export const ClaimBalance = ({ refresh }: { refresh: QueryParams['refresh'] }) => {
     const { chainId } = useAppKitNetwork()
-    const { isFeatureActive } = useGoodDappFeatures()
-    const reserveEnabled = isFeatureActive('reserveEnabled', Number(chainId))
+    const { activeNetworksByFeature } = useGoodDappFeatures()
+    const reserveEnabled = isFeatureActive(activeNetworksByFeature, 'reserveEnabled', Number(chainId))
     const rawPrice = useG$Price(5, reserveEnabled ? Number(chainId) : 42220)
 
     const G$Price = +new Fraction(rawPrice?.toString() || 0, 1e18).toSignificant(6)
@@ -56,7 +56,7 @@ export const ClaimBalance = ({ refresh }: { refresh: QueryParams['refresh'] }) =
                     Number(chainId) !== chain &&
                     claimed &&
                     !claimed.isZero() &&
-                    isFeatureActive('claimEnabled', chain)
+                    isFeatureActive(activeNetworksByFeature, 'claimEnabled', chain)
                 ) {
                     return chain
                 }
@@ -66,7 +66,7 @@ export const ClaimBalance = ({ refresh }: { refresh: QueryParams['refresh'] }) =
         }
 
         setClaimNext(findNextClaimChain())
-    }, [chainId, claimedCelo, claimedFuse, claimedXdc, isFeatureActive])
+    }, [chainId, claimedCelo, claimedFuse, claimedXdc, activeNetworksByFeature])
 
     const switchChain = useCallback(() => {
         if (!claimNext) return

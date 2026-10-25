@@ -11,7 +11,7 @@ import SwapMento from './SwapCore/mentoReserve'
 import { PageLayout } from 'components/Layout/PageLayout'
 import { getEnv } from 'utils/env'
 import { NETWORK_LABEL } from '../../../constants/networks'
-import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { isFeatureActive, useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
 
 const SwapExplanationFooter = () => (
     <VStack space={1} textAlign="center">
@@ -101,9 +101,9 @@ const Swap = memo((props: any) => {
     const { chainId } = useAppKitNetwork()
     const isProd = getEnv() === 'production'
     const toggleNetworkModal = useNetworkModalToggle()
-    const { activeChainFeatures } = useGoodDappFeatures()
-    const reserveEnabled = activeChainFeatures['reserveEnabled']
-    const dexSwapEnabled = activeChainFeatures['dexSwapEnabled']
+    const { activeNetworksByFeature } = useGoodDappFeatures()
+    const reserveEnabled = isFeatureActive(activeNetworksByFeature, 'reserveEnabled', Number(chainId))
+    const dexSwapEnabled = isFeatureActive(activeNetworksByFeature, 'dexSwapEnabled', Number(chainId))
 
     const faqType = swapWidget === 'celoUniswap' ? 'swap' : 'reserve'
 

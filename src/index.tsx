@@ -91,17 +91,17 @@ const ProviderWrapper = ({ children }) => (
             }}
             autocapture={false}
         >
-            <AppKitProvider>
-                <GoodXProvider
-                    nativeBaseProps={{ config: { suppressColorAccessibilityWarning: true }, theme: nbTheme }}
-                >
-                    <Web3ContextProvider>
-                        <GoodDappFeatureProvider>
+            <GoodDappFeatureProvider>
+                <AppKitProvider>
+                    <GoodXProvider
+                        nativeBaseProps={{ config: { suppressColorAccessibilityWarning: true }, theme: nbTheme }}
+                    >
+                        <Web3ContextProvider>
                             <LanguageProvider>{children}</LanguageProvider>
-                        </GoodDappFeatureProvider>
-                    </Web3ContextProvider>
-                </GoodXProvider>
-            </AppKitProvider>
+                        </Web3ContextProvider>
+                    </GoodXProvider>
+                </AppKitProvider>
+            </GoodDappFeatureProvider>
         </PostHogProvider>
     </Provider>
 )

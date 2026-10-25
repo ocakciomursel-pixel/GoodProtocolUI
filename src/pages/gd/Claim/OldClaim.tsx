@@ -40,7 +40,7 @@ import BillyConfused from 'assets/images/claim/billyconfused.png'
 
 import { useIsSimpleApp } from 'state/simpleapp/simpleapp'
 import { useDisabledClaimingModal } from './useDisabledClaimModal'
-import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { isFeatureActive, useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
 
 const OldClaim = memo(() => {
     const { i18n } = useLingui()
@@ -66,8 +66,9 @@ const OldClaim = memo(() => {
     const [, payload] = useFeatureFlagWithPayload('claim-feature')
     const { enabled: claimEnabled = true, disabledMessage = '' } = (payload as any) || {}
 
-    const { activeNetworksByFeature, activeChainFeatures } = useGoodDappFeatures()
+    const { activeNetworksByFeature } = useGoodDappFeatures()
     const supportedChains = activeNetworksByFeature['claimEnabled'] || []
+    const claimActiveOnChain = isFeatureActive(activeNetworksByFeature, 'claimEnabled', chainId)
     const isProd = getEnv() === 'production'
 
     const { isSmallTabletView } = useScreenSize()
@@ -160,7 +161,7 @@ const OldClaim = memo(() => {
             return false
         }
 
-        if (activeChainFeatures['claimEnabled'] || !isProd || isMinipay) {
+        if (claimActiveOnChain || !isProd || isMinipay) {
             // minipay doesnt handle gasPrice correctly, so we let it decide
             const claim = await send(isMinipay ? { gasPrice: undefined } : {})
 
@@ -186,7 +187,7 @@ const OldClaim = memo(() => {
 
         return false
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [send, network, sendData, activeChainFeatures, isSimpleApp, claimEnabled, showModal])
+    }, [send, network, sendData, claimActiveOnChain, isSimpleApp, claimEnabled, showModal])
 
     const handleConnect = useCallback(async () => {
         if (!address) {
@@ -360,7 +361,7 @@ const OldClaim = memo(() => {
                                 </Box>
                             ) : (
                                 <>
-                                    {!activeChainFeatures['claimEnabled'] && isProd ? (
+                                    {!claimActiveOnChain && isProd ? (
                                         <>
                                             <Title
                                                 w="340px"
