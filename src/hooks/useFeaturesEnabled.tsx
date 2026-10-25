@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useMemo } from 'react'
-import { useEthers } from '@usedapp/core'
 import { SupportedChains } from '@gooddollar/web3sdk-v2'
 import { useFeatureFlagWithPayload } from 'posthog-react-native'
 
@@ -13,9 +12,8 @@ interface FeatureConfigPayload {
 }
 
 interface FeatureContextValue {
-    isFeatureActive: (featureName: string, chainId?: SupportedChains) => boolean
+    isFeatureActive: (featureName: string, chainId?: SupportedChains | number) => boolean
     activeNetworksByFeature: Record<string, SupportedChains[]>
-    activeChainFeatures: Record<string, boolean>
 }
 
 const supportedFeatureKeys = [
@@ -80,13 +78,29 @@ const disabledFeatureConfig: FeatureConfigPayload = {
     },
 }
 
+export const isFeatureActive = (
+    activeNetworksByFeature: Record<string, SupportedChains[]>,
+    featureName: string,
+    chainId?: number | string | null
+): boolean => {
+    if (!chainId) return false
+    return activeNetworksByFeature[featureName]?.includes(Number(chainId) as SupportedChains) ?? false
+}
+
+export const getChainFeatures = (
+    activeNetworksByFeature: Record<string, SupportedChains[]>,
+    chainId?: number | string | null
+): Record<string, boolean> =>
+    Object.fromEntries(
+        supportedFeatureKeys.map((feature) => [feature, isFeatureActive(activeNetworksByFeature, feature, chainId)])
+    )
+
 const GoodDappFeatureContext = createContext<FeatureContextValue | undefined>(undefined)
 
 export const GoodDappFeatureProvider: React.FC<{
     featureConfig?: FeatureConfigPayload
     children: React.ReactNode
 }> = ({ children }) => {
-    const { chainId } = useEthers()
     const [featureConfigFlag, payload] = useFeatureFlagWithPayload('gooddapp-feature-config')
     const featureConfig =
         featureConfigFlag === false
@@ -97,7 +111,7 @@ export const GoodDappFeatureProvider: React.FC<{
         const isGlobalFeatureSystemDisabled = featureConfig.globalDefaults.defaultEnabled === false
         const productionNetworkIds = Object.values(SupportedChains).filter((id) => id)
 
-        const activeNetworksByFeature: Record<number, SupportedChains[]> = {}
+        const activeNetworksByFeature: Record<string, SupportedChains[]> = {}
 
         for (const featureName of supportedFeatureKeys) {
             const globalFeatureDefault =
@@ -115,23 +129,14 @@ export const GoodDappFeatureProvider: React.FC<{
             })
         }
 
-        const isFeatureActive = (featureName: string, targetChainId = chainId): boolean => {
-            if (!targetChainId) return false
-            return activeNetworksByFeature[featureName]?.includes(targetChainId as SupportedChains) ?? false
-        }
-
-        const activeChainFeatures = Object.fromEntries(
-            supportedFeatureKeys.map((feature) => [feature, isFeatureActive(feature, chainId)])
-        )
-
         return {
-            isFeatureActive,
+            isFeatureActive: (featureName: string, targetChainId?: SupportedChains | number): boolean =>
+                isFeatureActive(activeNetworksByFeature, featureName, targetChainId),
             activeNetworksByFeature,
-            activeChainFeatures,
         }
-    }, [featureConfig, chainId])
+    }, [featureConfig])
 
-    return <GoodDappFeatureContext.Provider value={contextValue}>{children}</GoodDappFeatureContext.Provider>
+    return React.createElement(GoodDappFeatureContext.Provider, { value: contextValue }, children)
 }
 
 export const useGoodDappFeatures = (): FeatureContextValue => {

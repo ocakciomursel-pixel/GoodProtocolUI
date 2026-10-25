@@ -15,7 +15,8 @@ import { socials } from 'constants/socials'
 import classNames from 'classnames'
 import { isMiniPay } from 'utils/minipay'
 import { getNetworkEnv } from 'utils/env'
-import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { isFeatureActive, useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { useAppKitNetwork } from '@reown/appkit/react'
 
 const SocialsLink: React.FC<{ network: string; logo: string; url: string; onPress: (e: any, url: string) => void }> = ({
     network,
@@ -68,9 +69,10 @@ export default function SideBar({ mobile, closeSidebar }: { mobile?: boolean; cl
     const secondRowItems = socialItems.slice(4)
 
     const [, payload] = useFeatureFlagWithPayload('advanced-minipay-enabled')
-    const { isFeatureActive } = useGoodDappFeatures()
-    const microBridgeEnabled = isFeatureActive('microBridgeEnabled')
-    const lzBridgeEnabled = isFeatureActive('lzBridgeEnabled')
+    const { chainId } = useAppKitNetwork()
+    const { activeNetworksByFeature } = useGoodDappFeatures()
+    const microBridgeEnabled = isFeatureActive(activeNetworksByFeature, 'microBridgeEnabled', Number(chainId))
+    const lzBridgeEnabled = isFeatureActive(activeNetworksByFeature, 'lzBridgeEnabled', Number(chainId))
 
     const containerStyles = useBreakpointValue({
         base: {

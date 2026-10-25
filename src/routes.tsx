@@ -7,7 +7,7 @@ import { RedirectHashRoutes } from 'pages/routes/redirects'
 import { useAppKitNetwork } from '@reown/appkit/react'
 import { CustomLightSpinner } from 'theme'
 import Circle from 'assets/images/blue-loader.svg'
-import { useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
+import { isFeatureActive, useGoodDappFeatures } from 'hooks/useFeaturesEnabled'
 
 const Dashboard = lazy(() => import('./pages/gd/DatastudioDashboard'))
 const Swap = lazy(() => import('./pages/gd/Swap'))
@@ -28,9 +28,14 @@ const FeatureRoute = ({
     featureName: string
     component: React.ComponentType
 }) => {
-    const { isFeatureActive } = useGoodDappFeatures()
+    const { chainId } = useAppKitNetwork()
+    const { activeNetworksByFeature } = useGoodDappFeatures()
 
-    return isFeatureActive(featureName) ? <Component /> : <Redirect to="/dashboard" />
+    return isFeatureActive(activeNetworksByFeature, featureName, Number(chainId)) ? (
+        <Component />
+    ) : (
+        <Redirect to="/dashboard" />
+    )
 }
 
 const RoutesWrapper = () => {
